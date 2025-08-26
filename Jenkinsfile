@@ -20,39 +20,39 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Building Docker image..."
-                    sh '''
-                        if ! command -v docker &> /dev/null; then
-                            echo "Docker is not installed or not available!"
-                            exit 1
-                        fi
-                        docker build -t ${IMAGE_NAME} .
-                    '''
-                }
+                echo "Building Docker image..."
+                powershell """
+                    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+                        Write-Host 'Docker is not installed or not available!'
+                        exit 1
+                    }
+
+                    docker build -t \$env:IMAGE_NAME .
+                """
             }
         }
 
         stage('Stop Old Container') {
             steps {
-                script {
-                    echo "Stopping old container if it exists..."
-                    sh '''
-                        if [ $(docker ps -q -f name=${CONTAINER_NAME}) ]; then
-                            docker stop ${CONTAINER_NAME}
-                            docker rm ${CONTAINER_NAME}
-                        fi
-                    '''
-                }
+                echo "Stopping old container if it exists..."
+                powershell """
+                    \$container = docker ps -a --filter "name=\$env:CONTAINER_NAME" --format "{{.Names}}"
+                    if (\$container) {
+                        docker stop \$env:CONTAINER_NAME
+                        docker rm \$env:CONTAINER_NAME
+                    } else {
+                        Write-Host "No container named \$env:CONTAINER_NAME found."
+                    }
+                """
             }
         }
 
         stage('Run Container') {
             steps {
-                script {
-                    echo "Running new container..."
-                    sh "docker run -d -p ${PORT}:80 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
-                }
+                echo "Running new container..."
+                powershell """
+                    docker run -d -p \$env:PORT:80 --name \$env:CONTAINER_NAME \$env:IMAGE_NAME
+                """
             }
         }
     }
