@@ -1,32 +1,55 @@
 pipeline {
     agent any
 
-    stages {
-        // stage('Verify Docker Installation') {
-        //     steps {
-        //        // script {
-        //             sh 'docker --version'  // Ensure Docker is available
-        //             sh 'docker ps'  // List running containers
-        //         //}
-        //     }
-        // }
+    environment {
+        IMAGE_NAME = "my-profile-card"
+        CONTAINER_NAME = "myprofile"
+        PORT = "8081"
+    }
 
-        stage('Clone Repository') {
+    stages {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/shrushti-06/profile--card.git'
+                git url: 'https://github.com/shrushti-06/profile--card.git', branch: 'main'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t portfolio-website .'
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                script {
+                    sh """
+                    if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
+                        docker stop ${CONTAINER_NAME}
+                        docker rm ${CONTAINER_NAME}
+                    fi
+                    """
+                }
             }
         }
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 8090:80 portfolio-website'
+                script {
+                    sh "docker run -d -p ${PORT}:80 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+                }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Pipeline completed! Access your profile at http://localhost:${PORT}"
+        }
+        failure {
+            echo "Pipeline failed. Check the logs."
         }
     }
 }
