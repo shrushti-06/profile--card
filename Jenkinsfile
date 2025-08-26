@@ -5,12 +5,15 @@ pipeline {
         IMAGE_NAME = "my-profile-card"
         CONTAINER_NAME = "myprofile"
         PORT = "8081"
+        GIT_CREDENTIALS_ID = "github-token"  // ID of your GitHub credentials in Jenkins
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/shrushti-06/profile--card.git', branch: 'main'
+                git url: 'https://github.com/shrushti-06/profile--card.git',
+                    branch: 'main',
+                    credentialsId: "${GIT_CREDENTIALS_ID}"
             }
         }
 
